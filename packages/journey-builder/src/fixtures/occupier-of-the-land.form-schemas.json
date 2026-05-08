@@ -1,0 +1,31 @@
+{
+  "journeyId": "occupier-of-the-land",
+  "forms": [
+    {
+      "formId": "are-you-occupier",
+      "title": "Are you the occupier of the land?",
+      "caption": "Occupier of the land",
+      "description": "An occupier is defined by their control over the land, not necessarily by ownership. This means that tenants, managers, or anyone with control over the land can be considered occupiers.",
+      "fields": [
+        {
+          "id": "isOccupier",
+          "type": "radio",
+          "label": "Are you the occupier of the land?",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" }
+          ],
+          "validation": {
+            "required": true,
+            "messages": { "required": "Select whether you are the occupier of the land" }
+          }
+        }
+      ],
+      "back": "journey:activities",
+      "next": "summary",
+      "nextWhen": [
+        { "fieldId": "isOccupier", "value": "no", "then": "add-instance:occupier-details" }
+      ]
+    }
+  ]
+}

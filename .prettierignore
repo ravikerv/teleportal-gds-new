@@ -1,0 +1,8 @@
+dist/
+node_modules/
+coverage/
+docs/.docusaurus/
+docs/build/
+docs/node_modules/
+ARCHITECTURE.md
+IMPLEMENTATION_PROMPT.md

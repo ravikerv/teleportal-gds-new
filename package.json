@@ -1,0 +1,24 @@
+{
+  "name": "teleportal-gds-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Workspace root for teleportal-gds (the GovUK component library) and journey-builder (the visual schema authoring tool).",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=teleportal-gds",
+    "dev": "npm run dev --workspace=teleportal-gds",
+    "test": "npm run test --workspace=teleportal-gds",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "npm run format --workspace=teleportal-gds",
+    "format:check": "npm run format:check --workspace=teleportal-gds",
+    "storybook": "npm run storybook --workspace=teleportal-gds",
+    "next-app:dev": "npm run dev --workspace=teleportal-gds-example",
+    "builder:dev": "npm run dev --workspace=@teleportal/journey-builder"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "title": "Apply for an environmental permit",
+  "sections": [
+    {
+      "id": "contacts",
+      "title": "Contacts",
+      "tasks": [
+        {
+          "id": "contact-details",
+          "label": "Contact details",
+          "status": "not-started"
+        }
+      ]
+    },
+    {
+      "id": "activities",
+      "title": "Activities",
+      "tasks": [
+        {
+          "id": "activities",
+          "label": "Provide details about the activities",
+          "status": "not-started"
+        }
+      ]
+    },
+    {
+      "id": "competence",
+      "title": "Competence",
+      "tasks": [
+        {
+          "id": "competence-details",
+          "label": "Provide details about competence",
+          "status": "not-started"
+        }
+      ]
+    },
+    {
+      "id": "documents",
+      "title": "Documents",
+      "tasks": [
+        {
+          "id": "supporting-documents",
+          "label": "Upload supporting documents",
+          "status": "not-started"
+        },
+        {
+          "id": "confidentiality",
+          "label": "Request confidentiality",
+          "status": "not-started"
+        }
+      ]
+    },
+    {
+      "id": "payment-and-declaration",
+      "title": "Payment and declaration",
+      "tasks": [
+        {
+          "id": "application-charge",
+          "label": "Check application charge",
+          "status": "not-started"
+        },
+        {
+          "id": "payment-details",
+          "label": "Provide payment details",
+          "status": "not-started"
+        },
+        {
+          "id": "declaration",
+          "label": "Declaration",
+          "status": "not-started"
+        },
+        {
+          "id": "send-application",
+          "label": "Send application",
+          "status": "cannot-start",
+          "statusLabel": "Not ready to send",
+          "dependsOn": [
+            "contact-details",
+            "activities",
+            "competence-details",
+            "supporting-documents",
+            "confidentiality",
+            "application-charge",
+            "payment-details",
+            "declaration"
+          ]
+        }
+      ]
+    }
+  ],
+  "footerActions": [
+    {
+      "label": "Save and return to dashboard",
+      "actionId": "save-and-exit",
+      "variant": "primary",
+      "redirectTo": "/"
+    },
+    {
+      "label": "Delete this application",
+      "actionId": "delete-application",
+      "variant": "secondary",
+      "redirectTo": "/"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "journeyId": "occupier-details",
+  "looping": {
+    "parentJourneyId": "occupier-of-the-land"
+  },
+  "forms": [
+    {
+      "formId": "details-page",
+      "title": "Add the occupier's details",
+      "caption": "Occupier of the land",
+      "fields": [
+        {
+          "id": "firstName",
+          "type": "input",
+          "label": "First name",
+          "autocomplete": "given-name",
+          "validation": { "required": true, "minLength": 1, "maxLength": 50 }
+        },
+        {
+          "id": "lastName",
+          "type": "input",
+          "label": "Last name",
+          "autocomplete": "family-name",
+          "validation": { "required": true, "minLength": 1, "maxLength": 50 }
+        },
+        {
+          "id": "email",
+          "type": "input",
+          "inputType": "email",
+          "label": "Email address",
+          "autocomplete": "email",
+          "validation": {
+            "required": true,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "messages": { "pattern": "Enter an email address in the correct format, like name@example.com" }
+          }
+        },
+        {
+          "id": "phone",
+          "type": "input",
+          "inputType": "tel",
+          "label": "Phone number",
+          "autocomplete": "tel",
+          "validation": { "required": true, "minLength": 6, "maxLength": 20 }
+        }
+      ],
+      "back": "parent-summary",
+      "next": "consent-page"
+    },
+    {
+      "formId": "consent-page",
+      "title": "Do you have the consent of the occupier to carry out the activity?",
+      "caption": "Occupier of the land",
+      "fields": [
+        {
+          "id": "hasConsent",
+          "type": "radio",
+          "label": "Do you have the occupier's consent?",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" }
+          ],
+          "validation": {
+            "required": true,
+            "messages": { "required": "Select whether you have the occupier's consent" }
+          }
+        }
+      ],
+      "back": "details-page",
+      "next": "parent-summary"
+    }
+  ]
+}

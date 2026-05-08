@@ -1,0 +1,284 @@
+{
+  "journeyId": "contact-details",
+  "forms": [
+    {
+      "type": "hub",
+      "id": "manage-contacts",
+      "title": "Manage contact details",
+      "description": "Add the contacts and address we need to process this application.",
+      "back": "task-list",
+      "next": "task-list",
+      "continueLabel": "Continue",
+      "items": [
+        {
+          "id": "application-contact",
+          "key": "Application contact",
+          "addLabel": "Add a new contact",
+          "link": "application-contact",
+          "sources": [
+            {
+              "valueFrom": "application-contact.firstName",
+              "displayPaths": [
+                "application-contact.firstName",
+                "application-contact.lastName",
+                "application-contact.email",
+                "application-contact.phone"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "billing-contact",
+          "key": "Billing contact",
+          "addLabel": "Add a new contact",
+          "link": "billing-contact",
+          "sources": [
+            {
+              "valueFrom": "billing-contact.firstName",
+              "displayPaths": [
+                "billing-contact.firstName",
+                "billing-contact.lastName",
+                "billing-contact.email",
+                "billing-contact.phone"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "billing-address",
+          "key": "Billing address",
+          "showWhen": "billing-contact.firstName",
+          "addLabel": "Add the billing address",
+          "link": "is-billing-address",
+          "sources": [
+            {
+              "valueFrom": "billing-address-manual.line1",
+              "displayPaths": [
+                "billing-address-manual.line1",
+                "billing-address-manual.line2",
+                "billing-address-manual.town",
+                "billing-address-manual.county",
+                "billing-address-manual.postcode"
+              ]
+            },
+            {
+              "valueFrom": "billing-address-select.addressId_label"
+            },
+            {
+              "valueFrom": "is-billing-address.isExistingAddress",
+              "equals": "yes",
+              "literal": "1 Orchard Road\nStrawford\nST1 7NL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "formId": "application-contact",
+      "title": "Application contact",
+      "fields": [
+        {
+          "id": "firstName",
+          "type": "input",
+          "label": "First name",
+          "autocomplete": "given-name",
+          "validation": { "required": true, "minLength": 1, "maxLength": 50 }
+        },
+        {
+          "id": "lastName",
+          "type": "input",
+          "label": "Last name",
+          "autocomplete": "family-name",
+          "validation": { "required": true, "minLength": 1, "maxLength": 50 }
+        },
+        {
+          "id": "email",
+          "type": "input",
+          "inputType": "email",
+          "label": "Email address",
+          "autocomplete": "email",
+          "validation": {
+            "required": true,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "messages": { "pattern": "Enter an email address in the correct format, like name@example.com" }
+          }
+        },
+        {
+          "id": "phone",
+          "type": "input",
+          "inputType": "tel",
+          "label": "Phone number",
+          "autocomplete": "tel",
+          "hint": "For international numbers include the country code",
+          "validation": { "required": true, "minLength": 6, "maxLength": 20 }
+        }
+      ],
+      "back": "journey-root",
+      "next": "journey-root"
+    },
+    {
+      "formId": "billing-contact",
+      "title": "Billing contact",
+      "fields": [
+        {
+          "id": "firstName",
+          "type": "input",
+          "label": "First name",
+          "autocomplete": "given-name",
+          "validation": { "required": true, "minLength": 1, "maxLength": 50 }
+        },
+        {
+          "id": "lastName",
+          "type": "input",
+          "label": "Last name",
+          "autocomplete": "family-name",
+          "validation": { "required": true, "minLength": 1, "maxLength": 50 }
+        },
+        {
+          "id": "email",
+          "type": "input",
+          "inputType": "email",
+          "label": "Email address",
+          "autocomplete": "email",
+          "validation": {
+            "required": true,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "messages": { "pattern": "Enter an email address in the correct format, like name@example.com" }
+          }
+        },
+        {
+          "id": "phone",
+          "type": "input",
+          "inputType": "tel",
+          "label": "Phone number",
+          "autocomplete": "tel",
+          "hint": "For international numbers include the country code",
+          "validation": { "required": true, "minLength": 6, "maxLength": 20 }
+        }
+      ],
+      "back": "journey-root",
+      "next": "is-billing-address"
+    },
+    {
+      "formId": "is-billing-address",
+      "title": "Is this the billing address?",
+      "description": "1 Orchard Road\nStrawford\nST1 7NL",
+      "fields": [
+        {
+          "id": "isExistingAddress",
+          "type": "radio",
+          "label": "Use the address shown above as the billing address?",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No, enter a different address" }
+          ],
+          "validation": {
+            "required": true,
+            "messages": { "required": "Select whether to use this address as the billing address" }
+          }
+        }
+      ],
+      "back": "billing-contact",
+      "next": "billing-postcode",
+      "nextWhen": [
+        { "fieldId": "isExistingAddress", "value": "yes", "then": "journey-root" }
+      ]
+    },
+    {
+      "formId": "billing-postcode",
+      "title": "What is the billing postcode?",
+      "fields": [
+        {
+          "id": "postcode",
+          "type": "input",
+          "label": "Postcode",
+          "autocomplete": "postal-code",
+          "hint": "For example, SW1A 1AA",
+          "validation": {
+            "required": true,
+            "pattern": "^[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\\s*[0-9][A-Za-z]{2}$",
+            "messages": { "pattern": "Enter a valid UK postcode" }
+          }
+        }
+      ],
+      "back": "is-billing-address",
+      "next": "billing-address-select",
+      "submitLabel": "Find address"
+    },
+    {
+      "formId": "billing-address-select",
+      "title": "Choose the billing address",
+      "redirectIfMissing": {
+        "valueFrom": "billing-postcode.postcode",
+        "to": "billing-postcode"
+      },
+      "fields": [
+        {
+          "id": "addressId",
+          "type": "select",
+          "label": "Select an address",
+          "dataSource": {
+            "providerId": "postcode-address-lookup",
+            "paramFrom": "billing-postcode.postcode"
+          },
+          "validation": {
+            "required": true,
+            "messages": { "required": "Select an address from the list" }
+          }
+        }
+      ],
+      "back": "billing-postcode",
+      "next": "journey-root",
+      "secondaryLinks": [
+        { "text": "Enter the address manually", "href": "billing-address-manual" }
+      ]
+    },
+    {
+      "formId": "billing-address-manual",
+      "title": "Enter the billing address",
+      "fields": [
+        {
+          "id": "line1",
+          "type": "input",
+          "label": "Address line 1",
+          "autocomplete": "address-line1",
+          "validation": { "required": true, "minLength": 1, "maxLength": 100 }
+        },
+        {
+          "id": "line2",
+          "type": "input",
+          "label": "Address line 2 (optional)",
+          "autocomplete": "address-line2",
+          "validation": { "maxLength": 100 }
+        },
+        {
+          "id": "town",
+          "type": "input",
+          "label": "Town or city",
+          "autocomplete": "address-level2",
+          "validation": { "required": true, "minLength": 1, "maxLength": 60 }
+        },
+        {
+          "id": "county",
+          "type": "input",
+          "label": "County (optional)",
+          "autocomplete": "address-level1",
+          "validation": { "maxLength": 60 }
+        },
+        {
+          "id": "postcode",
+          "type": "input",
+          "label": "Postcode",
+          "autocomplete": "postal-code",
+          "validation": {
+            "required": true,
+            "pattern": "^[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\\s*[0-9][A-Za-z]{2}$",
+            "messages": { "pattern": "Enter a valid UK postcode" }
+          }
+        }
+      ],
+      "back": "billing-address-select",
+      "next": "journey-root"
+    }
+  ]
+}

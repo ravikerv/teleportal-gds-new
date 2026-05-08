@@ -1,0 +1,7 @@
+/**
+ * GovUK Frontend stylesheet, loaded only when the Preview tab is open.
+ * Wrapping is on the consumer side — preview content goes inside a
+ * `.govuk-template__body` div so the styles only apply within it.
+ */
+
+@import 'govuk-frontend/dist/govuk/govuk-frontend.min.css';

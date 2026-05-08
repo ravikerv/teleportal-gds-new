@@ -1,0 +1,47 @@
+{
+  "journeyId": "occupier-of-the-land",
+  "title": "Occupier of the land",
+  "back": "journey:activities",
+  "next": "journey:activities",
+  "headerRows": [
+    {
+      "key": "Are you the occupier of the land?",
+      "valueFrom": "are-you-occupier.isOccupier",
+      "changeLink": "are-you-occupier"
+    }
+  ],
+  "entries": {
+    "fromJourneyId": "occupier-details",
+    "groupLabel": "Occupier of the land {n}",
+    "addAnotherLabel": "Add another occupier of the land",
+    "removeLabel": "Remove",
+    "showWhen": { "valueFrom": "are-you-occupier.isOccupier", "equals": "no" },
+    "rows": [
+      {
+        "key": "Occupier's name",
+        "valueFromAll": ["details-page.firstName", "details-page.lastName"],
+        "valueFrom": "details-page.firstName",
+        "changeFormId": "details-page"
+      },
+      {
+        "key": "Email address",
+        "valueFrom": "details-page.email",
+        "changeFormId": "details-page"
+      },
+      {
+        "key": "Phone number",
+        "valueFrom": "details-page.phone",
+        "changeFormId": "details-page"
+      },
+      {
+        "key": "Do you have the occupier's consent?",
+        "valueFrom": "consent-page.hasConsent",
+        "changeFormId": "consent-page"
+      }
+    ]
+  },
+  "submitLabel": "Continue",
+  "footerActions": [
+    { "label": "Save as draft", "actionId": "save-as-draft", "variant": "secondary", "redirectTo": "/applications/demo" }
+  ]
+}

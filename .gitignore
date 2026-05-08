@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build artefacts (matches packages/*/dist too)
+dist/
+storybook-static/
+coverage/
+*.tsbuildinfo
+
+# Next.js
+examples/next-app/.next/
+examples/next-app/next-env.d.ts
+
+# Vite cache
+.vite/
+
+# Docusaurus
+docs/.docusaurus/
+docs/build/
+
+# OS / editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Local agent / scratch
+.claude/
+
+# Secrets
+.env
+.env.*
+!.env.example

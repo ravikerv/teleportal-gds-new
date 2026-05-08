@@ -1,0 +1,24 @@
+{
+  "journeyId": "activities",
+  "forms": [
+    {
+      "type": "task-list",
+      "id": "activity-checklist",
+      "caption": "Mobile plant for land-spreading - deployment",
+      "title": "Activity checklist",
+      "back": "task-list",
+      "tasks": [
+        { "id": "occupier-of-the-land", "label": "Occupier of the land", "status": "not-started" },
+        { "id": "about-the-land-to-be-treated", "label": "About the land to be treated", "status": "not-started" },
+        { "id": "about-the-waste", "label": "About the waste", "status": "not-started" },
+        { "id": "previous-land-treatment", "label": "Previous land treatment", "status": "not-started" },
+        { "id": "storage", "label": "Storage", "status": "not-started" },
+        { "id": "site-surroundings", "label": "Site surroundings", "status": "not-started" }
+      ],
+      "footerActions": [
+        { "label": "Continue", "actionId": "activities-continue", "variant": "primary", "redirectTo": "/applications/demo" },
+        { "label": "Save as draft", "actionId": "save-as-draft", "variant": "secondary", "redirectTo": "/applications/demo" }
+      ]
+    }
+  ]
+}

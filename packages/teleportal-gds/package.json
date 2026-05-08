@@ -1,0 +1,86 @@
+{
+  "name": "teleportal-gds",
+  "version": "0.1.0",
+  "description": "TelePortal GDS — versioned React component library that wraps the GovUK Design System and renders user journeys from JSON schemas.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./actions": {
+      "types": "./dist/engine/formActions.d.ts",
+      "import": "./dist/engine/formActions.js",
+      "require": "./dist/engine/formActions.cjs"
+    },
+    "./components/GovukInit": {
+      "types": "./dist/components/GovukInit.d.ts",
+      "import": "./dist/components/GovukInit.js",
+      "require": "./dist/components/GovukInit.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "ARCHITECTURE.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "docs:install": "npm --prefix docs install",
+    "docs:start": "npm --prefix docs run start",
+    "docs:build": "npm --prefix docs run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@azure/identity": "^4.0.0",
+    "@azure/storage-blob": "^12.0.0",
+    "next": "^15.0.0 || ^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@azure/identity": {
+      "optional": true
+    },
+    "@azure/storage-blob": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "govuk-frontend": "^6.1.0",
+    "yup": "^1.4.0"
+  },
+  "devDependencies": {
+    "@azure/identity": "^4.13.1",
+    "@azure/storage-blob": "^12.31.0",
+    "@storybook/react-vite": "^10.0.0",
+    "@types/node": "^20.14.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "next": "^16.2.4",
+    "prettier": "^3.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "storybook": "^10.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vite": "^8.0.0",
+    "vitest": "^4.0.0"
+  }
+}
