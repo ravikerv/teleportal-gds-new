@@ -19,9 +19,8 @@
 import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
-import { BackLink } from '../components/BackLink';
-import { Button } from '../components/Button';
-import { ErrorSummary, type ErrorSummaryItem } from '../components/ErrorSummary';
+import type { ErrorSummaryItem } from '../components/ErrorSummary';
+import { getDesignSystem } from '../design-systems/registry';
 import { BLOB_PATHS } from '../shared/constants/index';
 import type { FormAnswers } from '../shared/types/journey.types';
 import type { FieldOption, FormPage, FormSchema } from '../shared/types/schema.types';
@@ -73,6 +72,7 @@ export function FormRenderer(props: FormRendererProps): ReactElement {
     instanceId,
   } = props;
   const submitLabel = props.submitLabel ?? schema.submitLabel ?? 'Save and continue';
+  const { components: c, tokens: t } = getDesignSystem();
 
   const errorItems: ErrorSummaryItem[] = Object.entries(errors).map(([fieldId, message]) => ({
     fieldId,
@@ -94,14 +94,14 @@ export function FormRenderer(props: FormRendererProps): ReactElement {
 
   return (
     <>
-      {backHref ? <BackLink href={backHref}>Back</BackLink> : null}
-      {errorItems.length > 0 ? <ErrorSummary errors={errorItems} /> : null}
+      {backHref ? <c.BackLink href={backHref}>Back</c.BackLink> : null}
+      {errorItems.length > 0 ? <c.ErrorSummary errors={errorItems} /> : null}
       {schema.caption ? (
-        <span className="govuk-caption-l">{schema.caption}</span>
+        <span className={t.captionL}>{schema.caption}</span>
       ) : null}
-      <h1 className="govuk-heading-l">{schema.title}</h1>
+      <h1 className={t.headingL}>{schema.title}</h1>
       {schema.description ? (
-        <p className="govuk-body" style={{ whiteSpace: 'pre-line' }}>
+        <p className={t.body} style={{ whiteSpace: 'pre-line' }}>
           {schema.description}
         </p>
       ) : null}
@@ -109,15 +109,15 @@ export function FormRenderer(props: FormRendererProps): ReactElement {
         {schema.fields.map((field) => (
           <div key={field.id}>{renderField(field, { values, errors, dataSources })}</div>
         ))}
-        <Button type="submit">{submitLabel}</Button>
+        <c.Button type="submit">{submitLabel}</c.Button>
       </form>
       {schema.secondaryLinks && schema.secondaryLinks.length > 0 ? (
-        <p className="govuk-body">
+        <p className={t.body}>
           {schema.secondaryLinks.map((link, idx) => (
             <span key={idx}>
               {idx > 0 ? ' · ' : null}
               <a
-                className="govuk-link"
+                className={t.link}
                 href={resolveNextPath(applicationId, journeyId, link.href)}
               >
                 {link.text}

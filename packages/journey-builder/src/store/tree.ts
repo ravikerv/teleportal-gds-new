@@ -95,7 +95,7 @@ export function buildProjectTree(project: Project): ProjectTree {
   return { roots: [...roots, ...orphans.map(build)] };
 }
 
-function listJourneyRefs(
+export function listJourneyRefs(
   source: TaskListSchema | TaskListJourneyPage,
 ): string[] {
   const flat = collectTasks(source);
@@ -112,7 +112,7 @@ function collectTasks(
   return [];
 }
 
-function titleOf(project: Project, journeyId: string): string {
+export function titleOf(project: Project, journeyId: string): string {
   const j = project.journeys[journeyId];
   if (!j) return journeyId;
   // Prefer hub / task-list / first-form title for a friendlier label.

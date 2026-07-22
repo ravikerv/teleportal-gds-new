@@ -1,0 +1,26 @@
+{
+  "name": "@teleportal/mural-import-service",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AI companion service: fetches a Mural board (via the Mural MCP server) and generates TelePortal journey schemas for the Journey Builder.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.4",
+    "@modelcontextprotocol/sdk": "^1.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

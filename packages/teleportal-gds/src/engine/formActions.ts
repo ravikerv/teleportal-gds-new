@@ -85,10 +85,17 @@ export async function submitFormAction(
   }
 
   await annotateDataSourceLabels(applicationId, journeyId, formPage, answers);
+  // Passing the schema lets the save clear any branch this submission
+  // abandoned (a re-answered `nextWhen` question) — stale answers must not
+  // survive on summaries or keep dependent journeys looking complete.
   if (instanceId) {
-    await saveEntryAnswers(applicationId, journeyId, instanceId, formId, answers);
+    await saveEntryAnswers(applicationId, journeyId, instanceId, formId, answers, {
+      formSchema: schemaBlob.data,
+    });
   } else {
-    await saveAnswers(applicationId, journeyId, formId, answers);
+    await saveAnswers(applicationId, journeyId, formId, answers, {
+      formSchema: schemaBlob.data,
+    });
   }
   await clearDraft(applicationId, journeyId, formId);
 

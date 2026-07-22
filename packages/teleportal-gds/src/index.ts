@@ -48,6 +48,15 @@ export type { AzureBlobStorageOptions } from './shared/utils/storage-azure.utils
 export * from './components/index';
 
 // ---------------------------------------------------------------------------
+// Design systems — the adapter contract, the GOV.UK default, and the
+// registry. A client on another design system implements `DesignSystem`
+// against the wrapper Props contracts and calls `configureDesignSystem`
+// once at app startup; the engine picks it up everywhere.
+// ---------------------------------------------------------------------------
+
+export * from './design-systems/index';
+
+// ---------------------------------------------------------------------------
 // Engine — schema-driven renderers, registry, page-state loaders.
 // ---------------------------------------------------------------------------
 

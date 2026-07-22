@@ -10,6 +10,7 @@
 
 import type { ReactElement } from 'react';
 
+import { getDesignSystem } from '../design-systems/registry';
 import { BLOB_PATHS } from '../shared/constants/index';
 import type { JsonValue, ParentState } from '../shared/types/journey.types';
 import type { ConfirmationSchema } from '../shared/types/schema.types';
@@ -40,18 +41,17 @@ export function ConfirmationRenderer(props: ConfirmationRendererProps): ReactEle
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
 
+  const { components: c, tokens: t } = getDesignSystem();
+
   return (
     <>
-      <div className="govuk-panel govuk-panel--confirmation">
-        <h1 className="govuk-panel__title">{schema.panelTitle}</h1>
-        <div className="govuk-panel__body">
-          {schema.referenceLabel}
-          <br />
-          <strong>{referenceText}</strong>
-        </div>
-      </div>
+      <c.Panel title={schema.panelTitle}>
+        {schema.referenceLabel}
+        <br />
+        <strong>{referenceText}</strong>
+      </c.Panel>
       {paragraphs.map((p, i) => (
-        <p key={i} className="govuk-body">
+        <p key={i} className={t.body}>
           {p}
         </p>
       ))}

@@ -307,3 +307,147 @@ describe('data.utils — resolveValueFromPath', () => {
     expect(resolveValueFromPath(parent, 'unknown', 'name-page.firstName')).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Abandoned-branch clearing (re-answered nextWhen questions)
+// ---------------------------------------------------------------------------
+
+import type { FormSchema } from '../types/schema.types';
+import { addEntry, diffAbandonedBranch, saveEntryAnswers } from './data.utils';
+
+const gateField = {
+  id: 'flag',
+  type: 'radio' as const,
+  label: 'Flag',
+  options: [
+    { value: 'yes', label: 'Yes' },
+    { value: 'no', label: 'No' },
+  ],
+};
+
+describe('data.utils — abandoned branch clearing', () => {
+  it('resets a looping child journey when the branch into it is abandoned', async () => {
+    const schema: FormSchema = {
+      journeyId: 'occupier',
+      forms: [
+        {
+          formId: 'gate',
+          title: 'Gate',
+          fields: [gateField],
+          next: 'summary',
+          nextWhen: [{ fieldId: 'flag', value: 'no', then: 'add-instance:child' }],
+        },
+      ],
+    };
+    await saveAnswers('app-br1', 'occupier', 'gate', { flag: 'no' }, { formSchema: schema });
+    const instanceId = await addEntry('app-br1', 'child');
+    await saveEntryAnswers('app-br1', 'child', instanceId, 'details', {
+      firstName: 'Jane',
+    });
+
+    // Flip the gate: the child journey's data must reset.
+    await saveAnswers('app-br1', 'occupier', 'gate', { flag: 'yes' }, { formSchema: schema });
+
+    const parent = await loadParent('app-br1');
+    const child = parent?.data.journeys['child'];
+    expect(child?.entries ?? []).toEqual([]);
+    expect(child?.answers).toEqual({});
+    expect(child?.status).toBe('not-started');
+    // Denormalised per-journey blob stays in sync.
+    const childBlob = await loadJourney('app-br1', 'child');
+    expect(childBlob?.data.entries ?? []).toEqual([]);
+    expect(childBlob?.data.answers).toEqual({});
+  });
+
+  it('clears same-journey downstream forms when the branch flips', async () => {
+    const schema: FormSchema = {
+      journeyId: 'j',
+      forms: [
+        {
+          formId: 'gate',
+          title: 'Gate',
+          fields: [gateField],
+          next: 'summary',
+          nextWhen: [{ fieldId: 'flag', value: 'no', then: 'detail-a' }],
+        },
+        { formId: 'detail-a', title: 'A', fields: [], next: 'detail-b' },
+        { formId: 'detail-b', title: 'B', fields: [], next: 'summary' },
+      ],
+    };
+    await saveAnswers('app-br2', 'j', 'gate', { flag: 'no' }, { formSchema: schema });
+    await saveAnswers('app-br2', 'j', 'detail-a', { x: '1' }, { formSchema: schema });
+    await saveAnswers('app-br2', 'j', 'detail-b', { y: '2' }, { formSchema: schema });
+
+    await saveAnswers('app-br2', 'j', 'gate', { flag: 'yes' }, { formSchema: schema });
+
+    const journey = await loadJourney('app-br2', 'j');
+    expect(journey?.data.answers['gate']).toEqual({ flag: 'yes' });
+    expect(journey?.data.answers['detail-a']).toBeUndefined();
+    expect(journey?.data.answers['detail-b']).toBeUndefined();
+  });
+
+  it('protects forms the new branch reconverges onto', () => {
+    const forms: FormSchema['forms'] = [
+      {
+        formId: 'gate',
+        title: 'Gate',
+        fields: [gateField],
+        next: 'shared',
+        nextWhen: [{ fieldId: 'flag', value: 'no', then: 'route-a' }],
+      },
+      { formId: 'route-a', title: 'A', fields: [], next: 'shared' },
+      { formId: 'shared', title: 'S', fields: [], next: 'summary' },
+    ];
+    const diff = diffAbandonedBranch(
+      forms[0] as never,
+      { flag: 'no' },
+      { flag: 'yes' },
+      forms,
+    );
+    expect(diff).toEqual({ clearFormIds: ['route-a'], clearChildJourneyIds: [] });
+  });
+
+  it('does nothing when the branch is unchanged or on first save', async () => {
+    const schema: FormSchema = {
+      journeyId: 'j2',
+      forms: [
+        {
+          formId: 'gate',
+          title: 'Gate',
+          fields: [gateField],
+          next: 'summary',
+          nextWhen: [{ fieldId: 'flag', value: 'no', then: 'detail-a' }],
+        },
+        { formId: 'detail-a', title: 'A', fields: [], next: 'summary' },
+      ],
+    };
+    await saveAnswers('app-br3', 'j2', 'gate', { flag: 'no' }, { formSchema: schema });
+    await saveAnswers('app-br3', 'j2', 'detail-a', { x: '1' }, { formSchema: schema });
+    // Same answer again — nothing clears.
+    await saveAnswers('app-br3', 'j2', 'gate', { flag: 'no' }, { formSchema: schema });
+    const journey = await loadJourney('app-br3', 'j2');
+    expect(journey?.data.answers['detail-a']).toEqual({ x: '1' });
+  });
+
+  it('stays a no-op for legacy calls without a schema', async () => {
+    const schema: FormSchema = {
+      journeyId: 'j3',
+      forms: [
+        {
+          formId: 'gate',
+          title: 'Gate',
+          fields: [gateField],
+          next: 'summary',
+          nextWhen: [{ fieldId: 'flag', value: 'no', then: 'detail-a' }],
+        },
+        { formId: 'detail-a', title: 'A', fields: [], next: 'summary' },
+      ],
+    };
+    await saveAnswers('app-br4', 'j3', 'gate', { flag: 'no' }, { formSchema: schema });
+    await saveAnswers('app-br4', 'j3', 'detail-a', { x: '1' }, { formSchema: schema });
+    // Legacy call (no options): keeps old merge-only behaviour.
+    await saveAnswers('app-br4', 'j3', 'gate', { flag: 'yes' });
+    const journey = await loadJourney('app-br4', 'j3');
+    expect(journey?.data.answers['detail-a']).toEqual({ x: '1' });
+  });
+});

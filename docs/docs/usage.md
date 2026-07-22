@@ -67,7 +67,7 @@ No connection strings, no SAS tokens — anywhere.
 
 ## 3. Author your journey schemas
 
-Per the [Schema Reference](./schema-reference.md), each journey has up to four JSON files. Upload them to the container at the documented paths:
+Per the [JSON Schema Reference](./nextjs/schemas/overview.md), each journey has up to four JSON files. Upload them to the container at the documented paths:
 
 ```
 applications/{applicationId}/

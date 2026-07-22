@@ -17,9 +17,8 @@
 
 import type { ReactElement } from 'react';
 
-import { BackLink } from '../components/BackLink';
-import { Button } from '../components/Button';
-import { SummaryList, type SummaryListRow } from '../components/SummaryList';
+import type { SummaryListRow } from '../components/SummaryList';
+import { getDesignSystem } from '../design-systems/registry';
 import { BLOB_PATHS } from '../shared/constants/index';
 import type { JsonValue, ParentState } from '../shared/types/journey.types';
 import type {
@@ -95,6 +94,7 @@ function renderItem(
 
 export function HubRenderer(props: HubRendererProps): ReactElement {
   const { applicationId, journeyId, schema, parent } = props;
+  const { components: c, tokens: t } = getDesignSystem();
 
   const rendered = schema.items
     .map((item) => renderItem(item, parent, journeyId))
@@ -106,7 +106,7 @@ export function HubRenderer(props: HubRendererProps): ReactElement {
       return {
         key: item.key,
         value: (
-          <a className="govuk-link" href={linkHref}>
+          <a className={t.link} href={linkHref}>
             {item.addLabel}
           </a>
         ),
@@ -138,16 +138,16 @@ export function HubRenderer(props: HubRendererProps): ReactElement {
 
   return (
     <>
-      {backHref ? <BackLink href={backHref}>Back</BackLink> : null}
-      <h1 className="govuk-heading-l">{schema.title}</h1>
+      {backHref ? <c.BackLink href={backHref}>Back</c.BackLink> : null}
+      <h1 className={t.headingL}>{schema.title}</h1>
       {schema.description ? (
-        <p className="govuk-body">{schema.description}</p>
+        <p className={t.body}>{schema.description}</p>
       ) : null}
-      <SummaryList rows={rows} />
+      <c.SummaryList rows={rows} />
       <form action={completeAction}>
-        <Button type="submit" disabled={!allMatched}>
+        <c.Button type="submit" disabled={!allMatched}>
           {schema.continueLabel ?? 'Continue'}
-        </Button>
+        </c.Button>
       </form>
     </>
   );

@@ -62,6 +62,7 @@
 | **Server-side JavaScript only** | No client-side hooks/Context API. State lives on the server, via Server Components and Server Actions. |
 | **JSON schema driven** | Devs only edit JSON. No manual rendering code. Lowers maintenance, enables future visual builder. |
 | **Wrapper components over GovUK** | We never expose GovUK directly. Wrappers give us a stable API even if GovUK changes. |
+| **Design-system adapters** | The engine resolves every component and typographic class through a pluggable `DesignSystem` adapter (GovUK is the built-in default). A new client's design system is a new adapter package, not an engine change. See §11. |
 | **Yup for validation** | Mature, declarative, integrates well with schema-driven forms. |
 | **Versioned library distribution** | Consumers pin to a version; we can iterate without breaking them. |
 | **Azure Blob for state + schemas** | Single source of truth. Folder layout mirrors Next.js routing for predictable lookups. |
@@ -321,7 +322,105 @@ Visual drag-and-drop canvas where each "node" is a form page (or summary, confir
 
 ---
 
-## 11. Open Items / Things to Watch
+## 11. Design-System Adapters (multi-tenant theming)
+
+The product is design-system agnostic. GOV.UK is the *default*, not a
+dependency of the engine.
+
+### Contract
+
+```ts
+// teleportal-gds
+export type DesignSystem = {
+  name: string;
+  components: DesignSystemComponents; // one component per wrapper Props contract:
+                                      // Input, Select, Radio, Checkbox, DatePicker,
+                                      // TextArea, Button, BackLink, ErrorSummary,
+                                      // SummaryList, TaskList, Panel, Header, Footer,
+                                      // CookieBanner
+  tokens: DesignSystemTokens;         // class tokens the engine emits directly:
+                                      // headingXl/L/M, captionL, body, link, buttonGroup
+};
+```
+
+The wrapper **Props types are the stable contracts** — they carry no GOV.UK
+semantics (label, hint, error, options, …). The engine (`renderField` and
+every renderer) resolves components and tokens through the active adapter
+at render time and contains **zero** direct design-system imports.
+
+### Usage
+
+```ts
+// Consuming app, once at startup (e.g. root layout module):
+import { configureDesignSystem } from 'teleportal-gds';
+import { acmeDesignSystem } from '@acme/teleportal-ds';
+
+configureDesignSystem(acmeDesignSystem); // omit entirely for GOV.UK
+```
+
+The registry is a server-side module singleton (Server Components — no
+Context API), configured once per process; renderers resolve lazily so
+import order doesn't matter.
+
+### Shipping a new client design system
+
+1. New package `@<client>/teleportal-ds` implementing `DesignSystem`
+   against the exported Props contracts (plus its own CSS).
+2. `configureDesignSystem(clientDs)` in the consuming app.
+3. Schemas, storage, validation, navigation, journeys — all unchanged.
+
+### Shipped example: NHS.UK
+
+`nhsukDesignSystem` (exported from teleportal-gds) is the reference
+non-GOV.UK adapter — a full component set implementing the same Props
+contracts with nhsuk-frontend markup. It proves the swap end-to-end and
+doubles as the template for client adapters.
+
+### Builder preview
+
+The Journey Builder's preview panes and whole-journey walkthrough have a
+**design-system switcher** (GOV.UK / NHS.UK). Preview markup is authored
+against GOV.UK classes and transformed per skin (`preview/skin.ts` —
+mirrors the runtime adapters; nhsuk-frontend is a govuk-frontend fork so
+classes map by prefix plus a few exceptions). Adding a third design
+system to the builder = one skin entry + its CSS; at runtime = one
+adapter package.
+
+---
+
+## 12. AI Journey Import (Mural → Builder)
+
+BAs design journeys on a Mural board (conventions: `docs/docs/mural-conventions.md`);
+AI converts the board into schema files. Two tiers:
+
+- **Phase 0 (interactive)** — the repo's `/mural-import` Claude Code skill:
+  any MCP-capable agent host (Claude Code, or e.g. VS Code Copilot agent
+  mode) with the Mural MCP server connected generates a zip for the
+  builder's Import button.
+- **Phase 1 (in-product)** — `packages/mural-import-service`, a small Node
+  companion service: `POST /import {muralUrl}` → fetches widgets via the
+  Mural MCP server → LLM generates the bundle (structured output) →
+  server-side referential validation with one self-repair round → the
+  builder's **Import from Mural** dialog shows the AI's assumptions and
+  unresolved issues, and Apply loads the project (undo restores the
+  previous one). Nothing is exported without BA review.
+
+**Provider abstraction:** the LLM sits behind `LlmProvider`
+(`generateBundle` / `repairBundle`). Default is the Claude API
+(`claude-opus-4-8`, adaptive thinking, streaming); a mock provider serves
+tests/dev (`LLM_PROVIDER=mock`). Swapping to another vendor (e.g. GitHub
+Models or any OpenAI-compatible endpoint — the realistic "GitHub Copilot"
+server-side path) is one new provider class; prompt, Mural fetch,
+validation, and UI are untouched.
+
+**Config (service env):** `ANTHROPIC_API_KEY` (or an `ant auth login`
+profile), `MURAL_MCP_URL` + `MURAL_MCP_TOKEN` (+ optional
+`MURAL_MCP_WIDGETS_TOOL`), `LLM_PROVIDER`, `PORT` (8787),
+`ALLOWED_ORIGIN`. Builder side: `VITE_MURAL_IMPORT_SERVICE`.
+
+---
+
+## 13. Open Items / Things to Watch
 
 - **Cross-journey dependencies** — keep the resolution logic in one place (`data.utils`) so it doesn't drift.
 - **Schema versioning** — consider a `schemaVersion` field per JSON file so the engine can handle migrations.

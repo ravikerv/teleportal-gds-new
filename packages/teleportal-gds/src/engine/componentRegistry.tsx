@@ -13,12 +13,9 @@
 
 import { Fragment, type ComponentType, type ReactElement } from 'react';
 
-import { Checkbox, type CheckboxOption } from '../components/Checkbox';
-import { DatePicker } from '../components/DatePicker';
-import { Input } from '../components/Input';
-import { Radio, type RadioOption } from '../components/Radio';
-import { Select } from '../components/Select';
-import { TextArea } from '../components/TextArea';
+import type { CheckboxOption } from '../components/Checkbox';
+import type { RadioOption } from '../components/Radio';
+import { getDesignSystem } from '../design-systems/registry';
 import type { FormAnswers, JsonValue } from '../shared/types/journey.types';
 import type {
   FieldOption,
@@ -27,18 +24,21 @@ import type {
 } from '../shared/types/schema.types';
 
 /**
- * Loose-typed value shape — wrapper props differ per field type, so a
- * shared component prop type isn't useful. Use `renderField` for the
- * type-safe path; this map is for dispatch + introspection.
+ * FieldType → component map for the ACTIVE design system. A function
+ * (not a static map) because the adapter is configured at app startup —
+ * resolve at call time, never at module load.
  */
-export const componentRegistry = {
-  input: Input,
-  select: Select,
-  radio: Radio,
-  checkbox: Checkbox,
-  datepicker: DatePicker,
-  textarea: TextArea,
-} as const satisfies Record<FieldType, ComponentType<never>>;
+export function componentRegistry(): Record<FieldType, ComponentType<never>> {
+  const c = getDesignSystem().components;
+  return {
+    input: c.Input,
+    select: c.Select,
+    radio: c.Radio,
+    checkbox: c.Checkbox,
+    datepicker: c.DatePicker,
+    textarea: c.TextArea,
+  } as Record<FieldType, ComponentType<never>>;
+}
 
 export type FieldRenderContext = {
   /** Full set of pre-fill values for the form, keyed by field id. */
@@ -110,6 +110,10 @@ function mapOptionsForCheckbox(
 export function renderField(field: FormField, ctx: FieldRenderContext): ReactElement {
   const value = ctx.values[field.id];
   const error = ctx.errors[field.id];
+  // Resolve through the active design system so a configured adapter's
+  // components are used everywhere a schema field renders.
+  const { Input, Select, Radio, Checkbox, DatePicker, TextArea } =
+    getDesignSystem().components;
 
   switch (field.type) {
     case 'input':

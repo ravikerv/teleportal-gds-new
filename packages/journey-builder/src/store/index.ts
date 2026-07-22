@@ -10,7 +10,8 @@
  * against the journey ref so derivation only runs on actual mutation.
  */
 
-import { create } from 'zustand';
+import { temporal, type TemporalState } from 'zundo';
+import { create, useStore } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 import { PATTERNS_BY_ID, type Pattern } from '../patterns';
@@ -82,6 +83,8 @@ type BuilderState = {
     nodeId: string,
     pos: { x: number; y: number },
   ) => void;
+  /** Bulk position update — used by auto-layout ("Tidy up"). */
+  applyLayout: (journeyId: string, positions: LayoutMap) => void;
 
   // Page CRUD
   addPage: (
@@ -90,6 +93,12 @@ type BuilderState = {
     position: { x: number; y: number },
   ) => string; // returns the new node id
   removePageByNodeId: (journeyId: string, nodeId: string) => void;
+  /**
+   * Clone a form page (fields, validation, branches) under a fresh formId,
+   * offset slightly on the canvas. Only form pages duplicate — hub /
+   * task-list / summary are one-per-journey concepts.
+   */
+  duplicatePage: (journeyId: string, nodeId: string) => string;
 
   /**
    * Drop a pattern (pre-built sub-graph) onto the current journey.
@@ -154,8 +163,12 @@ type BuilderState = {
 
 export const STORAGE_KEY = 'teleportal-builder-project-v1';
 
+/** Slice of state tracked by undo/redo — schema + layout, never UI selection. */
+type TrackedState = { project: Project };
+
 export const useBuilderStore = create<BuilderState>()(
-  persist(
+  temporal(
+    persist(
     (set, get) => ({
   project: emptyProject(),
   activeJourneyId: '',
@@ -189,6 +202,12 @@ export const useBuilderStore = create<BuilderState>()(
   setNodePosition: (journeyId, nodeId, pos) =>
     setJourney(set, journeyId, (j) => ({ ...j, layout: { ...j.layout, [nodeId]: pos } })),
 
+  applyLayout: (journeyId, positions) =>
+    setJourney(set, journeyId, (j) => ({
+      ...j,
+      layout: { ...j.layout, ...positions },
+    })),
+
   addPage: (journeyId, kind, position) => {
     const journey = get().project.journeys[journeyId];
     if (!journey) return '';
@@ -219,6 +238,40 @@ export const useBuilderStore = create<BuilderState>()(
 
   removePageByNodeId: (journeyId, nodeId) =>
     setJourney(set, journeyId, (j) => removePageById(j, nodeId)),
+
+  duplicatePage: (journeyId, nodeId) => {
+    const journey = get().project.journeys[journeyId];
+    const source = journey?.formSchema.forms.find(
+      (p): p is FormPage => isFormPage(p) && p.formId === nodeId,
+    );
+    if (!journey || !source) return '';
+    const existingIds = journey.formSchema.forms
+      .filter(isFormPage)
+      .map((p) => p.formId);
+    const newId = uniqueId(existingIds, `${source.formId}-copy`);
+    const clone: FormPage = structuredClone({ ...source, formId: newId });
+    const sourcePos = journey.layout[nodeId] ?? { x: 80, y: 240 };
+    setJourney(set, journeyId, (j) => {
+      const idx = j.formSchema.forms.findIndex(
+        (p) => isFormPage(p) && p.formId === nodeId,
+      );
+      const nextForms = [...j.formSchema.forms];
+      nextForms.splice(idx + 1, 0, clone);
+      const orderIdx = j.formOrder.indexOf(nodeId);
+      const nextOrder = [...j.formOrder];
+      nextOrder.splice(orderIdx + 1, 0, newId);
+      return {
+        ...j,
+        formSchema: { ...j.formSchema, forms: nextForms },
+        formOrder: nextOrder,
+        layout: {
+          ...j.layout,
+          [newId]: { x: sourcePos.x + 48, y: sourcePos.y + 48 },
+        },
+      };
+    });
+    return newId;
+  },
 
   applyPattern: (journeyId, patternId, position) => {
     const pattern: Pattern | undefined = PATTERNS_BY_ID[patternId];
@@ -466,9 +519,57 @@ export const useBuilderStore = create<BuilderState>()(
       // active journey are session-scoped.
       partialize: (state) => ({ project: state.project }),
       version: 1,
+      // Hydrating a saved project must not become an undoable step —
+      // otherwise the first Ctrl+Z would "undo" back to an empty project.
+      onRehydrateStorage: () => () => {
+        queueMicrotask(() => clearUndoHistory());
+      },
+    }
+    ),
+    {
+      limit: 100,
+      partialize: (state): TrackedState => ({ project: state.project }),
+      // Selection-only sets keep the same project reference — skip them.
+      equality: (past, current) => past.project === current.project,
+      // Group rapid-fire edits (inspector typing) into one undo step by
+      // only capturing the first snapshot in any 300ms window.
+      handleSet: (handleSet) => {
+        let lastCapture = 0;
+        return (...args: Parameters<typeof handleSet>) => {
+          const now = Date.now();
+          if (now - lastCapture < 300) return;
+          lastCapture = now;
+          handleSet(...args);
+        };
+      },
     }
   )
 );
+
+// ---------------------------------------------------------------------------
+// Undo / redo
+// ---------------------------------------------------------------------------
+
+/** Reactive selector over undo/redo state (pastStates, futureStates, …). */
+export function useTemporalStore<T>(
+  selector: (state: TemporalState<TrackedState>) => T,
+): T {
+  return useStore(useBuilderStore.temporal, selector);
+}
+
+export function undoProjectChange(): void {
+  useBuilderStore.temporal.getState().undo();
+}
+
+export function redoProjectChange(): void {
+  useBuilderStore.temporal.getState().redo();
+}
+
+/** Drop all undo history — used after hydration/import so the loaded
+ *  baseline is the floor users can't undo beneath. */
+export function clearUndoHistory(): void {
+  useBuilderStore.temporal.getState().clear();
+}
 
 // ---------------------------------------------------------------------------
 // Helpers

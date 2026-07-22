@@ -22,7 +22,7 @@
  * mapper detects them from edge targets and re-emits the right token.
  */
 
-import type { Edge, Node } from '@xyflow/react';
+import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import type {
   FormPage,
   FormSchema,
@@ -134,6 +134,10 @@ export function schemaToCanvas(input: {
     target: string;
     condition: BuilderEdgeData['condition'];
   }) {
+    // An empty token means "no navigation set yet" (fresh page, or the
+    // user deleted the edge). Render no edge and no phantom external
+    // node — the validation panel is what flags the missing `next`.
+    if (!opts.target) return;
     const targetId = resolveTarget(opts.target, formSchema);
     // Ensure external/synthetic targets exist as nodes.
     if (
@@ -151,15 +155,7 @@ export function schemaToCanvas(input: {
         });
       }
     }
-    edges.push({
-      id: edgeId(opts.from, targetId, opts.condition),
-      source: opts.from,
-      target: targetId,
-      label: opts.condition
-        ? `${opts.condition.fieldId}=${opts.condition.value}`
-        : undefined,
-      data: opts.condition ? { condition: opts.condition } : undefined,
-    });
+    edges.push(buildEdge(opts.from, targetId, opts.condition));
   }
 
   return { nodes, edges };
@@ -299,6 +295,37 @@ function edgeId(
   cond: BuilderEdgeData['condition'],
 ): string {
   return cond ? `${from}->${to}:${cond.fieldId}=${cond.value}` : `${from}->${to}`;
+}
+
+// Edge palette: default `next` edges read as neutral flow; conditional
+// `nextWhen` branches are amber so branching logic stands out at a glance.
+const EDGE_COLOR_DEFAULT = '#64748b'; // slate-500
+const EDGE_COLOR_BRANCH = '#d97706'; // amber-600
+
+function buildEdge(
+  from: string,
+  targetId: string,
+  condition: BuilderEdgeData['condition'],
+): BuilderEdge {
+  const color = condition ? EDGE_COLOR_BRANCH : EDGE_COLOR_DEFAULT;
+  return {
+    id: edgeId(from, targetId, condition),
+    source: from,
+    target: targetId,
+    type: 'smoothstep',
+    style: { stroke: color, strokeWidth: 1.5 },
+    markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color },
+    ...(condition
+      ? {
+          label: `${condition.fieldId} = ${condition.value}`,
+          labelStyle: { fill: '#92400e', fontSize: 10, fontWeight: 600 },
+          labelBgStyle: { fill: '#fef3c7', stroke: '#fcd34d', strokeWidth: 1 },
+          labelBgPadding: [6, 3] as [number, number],
+          labelBgBorderRadius: 4,
+          data: { condition },
+        }
+      : {}),
+  };
 }
 
 /**

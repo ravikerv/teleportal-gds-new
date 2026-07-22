@@ -8,28 +8,54 @@
  * with empty defaults. The submit button is decorative.
  */
 
+import { useSkinClass } from './skin';
 import type { FormField, FormPage } from '../schema';
 
 export function PreviewForm({
   page,
   mockAnswers = {},
+  onContinue,
 }: {
   page: FormPage;
   mockAnswers?: Record<string, string | string[]>;
+  /** Walkthrough mode: submit gathers field values and hands them over.
+   *  Omitted (drawer preview) → the button stays decorative. */
+  onContinue?: (values: Record<string, string | string[]>) => void;
 }) {
+  const s = useSkinClass();
   return (
-    <form noValidate onSubmit={(e) => e.preventDefault()}>
-      {page.caption ? <span className="govuk-caption-l">{page.caption}</span> : null}
-      <h1 className="govuk-heading-l">{page.title}</h1>
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!onContinue) return;
+        const data = new FormData(e.currentTarget);
+        const values: Record<string, string | string[]> = {};
+        for (const field of page.fields) {
+          if (field.type === 'checkbox') {
+            values[field.id] = data.getAll(field.id).map(String);
+          } else {
+            values[field.id] = String(data.get(field.id) ?? '');
+          }
+        }
+        onContinue(values);
+      }}
+    >
+      {page.caption ? <span className={s('govuk-caption-l')}>{page.caption}</span> : null}
+      <h1 className={s('govuk-heading-l')}>{page.title}</h1>
       {page.description ? (
-        <p className="govuk-body" style={{ whiteSpace: 'pre-line' }}>
+        <p className={s('govuk-body')} style={{ whiteSpace: 'pre-line' }}>
           {page.description}
         </p>
       ) : null}
       {page.fields.map((field) => (
         <FieldPreview key={field.id} field={field} mockAnswers={mockAnswers} />
       ))}
-      <button type="button" className="govuk-button" data-module="govuk-button">
+      <button
+        type={onContinue ? 'submit' : 'button'}
+        className={s('govuk-button')}
+        data-module="govuk-button"
+      >
         {page.submitLabel ?? 'Save and continue'}
       </button>
     </form>
@@ -44,20 +70,21 @@ function FieldPreview({
   mockAnswers: Record<string, string | string[]>;
 }) {
   const value = mockAnswers[field.id];
+  const s = useSkinClass();
   switch (field.type) {
     case 'input':
       return (
-        <div className="govuk-form-group">
-          <label className="govuk-label" htmlFor={field.id}>
+        <div className={s('govuk-form-group')}>
+          <label className={s('govuk-label')} htmlFor={field.id}>
             {field.label}
           </label>
           {field.hint ? (
-            <div className="govuk-hint" id={`${field.id}-hint`}>
+            <div className={s('govuk-hint')} id={`${field.id}-hint`}>
               {field.hint}
             </div>
           ) : null}
           <input
-            className="govuk-input"
+            className={s('govuk-input')}
             id={field.id}
             name={field.id}
             type={field.inputType ?? 'text'}
@@ -67,17 +94,17 @@ function FieldPreview({
       );
     case 'textarea':
       return (
-        <div className="govuk-form-group">
-          <label className="govuk-label" htmlFor={field.id}>
+        <div className={s('govuk-form-group')}>
+          <label className={s('govuk-label')} htmlFor={field.id}>
             {field.label}
           </label>
           {field.hint ? (
-            <div className="govuk-hint" id={`${field.id}-hint`}>
+            <div className={s('govuk-hint')} id={`${field.id}-hint`}>
               {field.hint}
             </div>
           ) : null}
           <textarea
-            className="govuk-textarea"
+            className={s('govuk-textarea')}
             id={field.id}
             name={field.id}
             rows={field.rows ?? 5}
@@ -87,17 +114,17 @@ function FieldPreview({
       );
     case 'datepicker':
       return (
-        <div className="govuk-form-group">
-          <label className="govuk-label" htmlFor={field.id}>
+        <div className={s('govuk-form-group')}>
+          <label className={s('govuk-label')} htmlFor={field.id}>
             {field.label}
           </label>
           {field.hint ? (
-            <div className="govuk-hint" id={`${field.id}-hint`}>
+            <div className={s('govuk-hint')} id={`${field.id}-hint`}>
               {field.hint}
             </div>
           ) : null}
           <input
-            className="govuk-input govuk-input--width-10"
+            className={s('govuk-input govuk-input--width-10')}
             id={field.id}
             name={field.id}
             type="date"
@@ -107,12 +134,12 @@ function FieldPreview({
       );
     case 'select':
       return (
-        <div className="govuk-form-group">
-          <label className="govuk-label" htmlFor={field.id}>
+        <div className={s('govuk-form-group')}>
+          <label className={s('govuk-label')} htmlFor={field.id}>
             {field.label}
           </label>
           <select
-            className="govuk-select"
+            className={s('govuk-select')}
             id={field.id}
             name={field.id}
             defaultValue={typeof value === 'string' ? value : ''}
@@ -130,32 +157,32 @@ function FieldPreview({
       );
     case 'radio':
       return (
-        <div className="govuk-form-group">
-          <fieldset className="govuk-fieldset">
-            <legend className="govuk-fieldset__legend govuk-fieldset__legend--m">
+        <div className={s('govuk-form-group')}>
+          <fieldset className={s('govuk-fieldset')}>
+            <legend className={s('govuk-fieldset__legend govuk-fieldset__legend--m')}>
               {field.label}
             </legend>
             {field.hint ? (
-              <div className="govuk-hint" id={`${field.id}-hint`}>
+              <div className={s('govuk-hint')} id={`${field.id}-hint`}>
                 {field.hint}
               </div>
             ) : null}
-            <div className="govuk-radios" data-module="govuk-radios">
+            <div className={s('govuk-radios')} data-module="govuk-radios">
               {field.options.map((opt, i) => (
-                <div key={opt.value} className="govuk-radios__item">
+                <div key={opt.value} className={s('govuk-radios__item')}>
                   <input
-                    className="govuk-radios__input"
+                    className={s('govuk-radios__input')}
                     id={`${field.id}-${i}`}
                     name={field.id}
                     type="radio"
                     value={opt.value}
                     defaultChecked={value === opt.value}
                   />
-                  <label className="govuk-label govuk-radios__label" htmlFor={`${field.id}-${i}`}>
+                  <label className={s('govuk-label govuk-radios__label')} htmlFor={`${field.id}-${i}`}>
                     {opt.label}
                   </label>
                   {opt.hint ? (
-                    <div className="govuk-hint govuk-radios__hint">{opt.hint}</div>
+                    <div className={s('govuk-hint govuk-radios__hint')}>{opt.hint}</div>
                   ) : null}
                 </div>
               ))}
@@ -166,23 +193,23 @@ function FieldPreview({
     case 'checkbox': {
       const arr = Array.isArray(value) ? value : [];
       return (
-        <div className="govuk-form-group">
-          <fieldset className="govuk-fieldset">
-            <legend className="govuk-fieldset__legend govuk-fieldset__legend--m">
+        <div className={s('govuk-form-group')}>
+          <fieldset className={s('govuk-fieldset')}>
+            <legend className={s('govuk-fieldset__legend govuk-fieldset__legend--m')}>
               {field.label}
             </legend>
-            <div className="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div className={s('govuk-checkboxes')} data-module="govuk-checkboxes">
               {field.options.map((opt, i) => (
-                <div key={opt.value} className="govuk-checkboxes__item">
+                <div key={opt.value} className={s('govuk-checkboxes__item')}>
                   <input
-                    className="govuk-checkboxes__input"
+                    className={s('govuk-checkboxes__input')}
                     id={`${field.id}-${i}`}
                     name={field.id}
                     type="checkbox"
                     value={opt.value}
                     defaultChecked={arr.includes(opt.value)}
                   />
-                  <label className="govuk-label govuk-checkboxes__label" htmlFor={`${field.id}-${i}`}>
+                  <label className={s('govuk-label govuk-checkboxes__label')} htmlFor={`${field.id}-${i}`}>
                     {opt.label}
                   </label>
                 </div>

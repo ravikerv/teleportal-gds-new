@@ -10,9 +10,8 @@
 
 import type { ReactElement } from 'react';
 
-import { BackLink } from '../components/BackLink';
-import { Button } from '../components/Button';
-import { SummaryList, type SummaryListRow } from '../components/SummaryList';
+import type { SummaryListRow } from '../components/SummaryList';
+import { getDesignSystem } from '../design-systems/registry';
 import { BLOB_PATHS } from '../shared/constants/index';
 import type { JourneyEntry, ParentState } from '../shared/types/journey.types';
 import type {
@@ -112,6 +111,7 @@ export type RemoveConfirmationRendererProps = {
 export function RemoveConfirmationRenderer({
   state,
 }: RemoveConfirmationRendererProps): ReactElement {
+  const { components: c, tokens: t } = getDesignSystem();
   const yesAction = removeInstanceAction.bind(
     null,
     state.applicationId,
@@ -120,18 +120,18 @@ export function RemoveConfirmationRenderer({
   );
   return (
     <>
-      <BackLink href={state.parentSummaryPath}>Back</BackLink>
-      <h1 className="govuk-heading-l">{state.title}</h1>
-      <SummaryList rows={state.rows} />
-      <div className="govuk-button-group">
+      <c.BackLink href={state.parentSummaryPath}>Back</c.BackLink>
+      <h1 className={t.headingL}>{state.title}</h1>
+      <c.SummaryList rows={state.rows} />
+      <div className={t.buttonGroup}>
         <form action={yesAction}>
-          <Button type="submit" variant="warning">
+          <c.Button type="submit" variant="warning">
             {state.removeButtonLabel}
-          </Button>
+          </c.Button>
         </form>
-        <Button type="button" variant="secondary" href={state.parentSummaryPath}>
+        <c.Button type="button" variant="secondary" href={state.parentSummaryPath}>
           {state.keepButtonLabel}
-        </Button>
+        </c.Button>
       </div>
     </>
   );

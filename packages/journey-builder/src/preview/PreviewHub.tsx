@@ -5,29 +5,47 @@
  * HubRenderer behaves at runtime.
  */
 
+import { useSkinClass } from './skin';
 import type { HubPage, HubItem, HubItemSource } from '../schema';
 
 export function PreviewHub({
   page,
   mockAnswers = {},
+  onItemLink,
+  onContinue,
 }: {
   page: HubPage;
   mockAnswers?: Record<string, Record<string, string>>;
+  /** Walkthrough mode: add/change links navigate to the item's target. */
+  onItemLink?: (item: HubItem) => void;
+  /** Walkthrough mode: the continue button follows `page.next`. */
+  onContinue?: () => void;
 }) {
+  const s = useSkinClass();
   const visibleItems = page.items.filter((item) =>
     item.showWhen ? !!resolve(mockAnswers, item.showWhen) : true,
   );
 
   return (
     <div>
-      <h1 className="govuk-heading-l">{page.title}</h1>
-      {page.description ? <p className="govuk-body">{page.description}</p> : null}
-      <dl className="govuk-summary-list">
+      <h1 className={s('govuk-heading-l')}>{page.title}</h1>
+      {page.description ? <p className={s('govuk-body')}>{page.description}</p> : null}
+      <dl className={s('govuk-summary-list')}>
         {visibleItems.map((item) => (
-          <ItemRow key={item.id} item={item} mockAnswers={mockAnswers} />
+          <ItemRow
+            key={item.id}
+            item={item}
+            mockAnswers={mockAnswers}
+            {...(onItemLink ? { onItemLink } : {})}
+          />
         ))}
       </dl>
-      <button className="govuk-button" type="button" data-module="govuk-button">
+      <button
+        className={s('govuk-button')}
+        type="button"
+        data-module="govuk-button"
+        onClick={onContinue}
+      >
         {page.continueLabel ?? 'Continue'}
       </button>
     </div>
@@ -37,23 +55,35 @@ export function PreviewHub({
 function ItemRow({
   item,
   mockAnswers,
+  onItemLink,
 }: {
   item: HubItem;
   mockAnswers: Record<string, Record<string, string>>;
+  onItemLink?: (item: HubItem) => void;
 }) {
+  const s = useSkinClass();
   const matched = item.sources
     .map((src) => matchSource(src, mockAnswers))
     .find((d) => d !== null);
 
+  const follow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onItemLink?.(item);
+  };
+
   return (
-    <div className="govuk-summary-list__row">
-      <dt className="govuk-summary-list__key">{item.key}</dt>
-      <dd className="govuk-summary-list__value" style={{ whiteSpace: 'pre-line' }}>
-        {matched ?? <a className="govuk-link" href="#">{item.addLabel}</a>}
+    <div className={s('govuk-summary-list__row')}>
+      <dt className={s('govuk-summary-list__key')}>{item.key}</dt>
+      <dd className={s('govuk-summary-list__value')} style={{ whiteSpace: 'pre-line' }}>
+        {matched ?? (
+          <a className={s('govuk-link')} href="#" onClick={follow}>
+            {item.addLabel}
+          </a>
+        )}
       </dd>
       {matched ? (
-        <dd className="govuk-summary-list__actions">
-          <a className="govuk-link" href="#">
+        <dd className={s('govuk-summary-list__actions')}>
+          <a className={s('govuk-link')} href="#" onClick={follow}>
             {item.changeLabel ?? 'Change'}
           </a>
         </dd>

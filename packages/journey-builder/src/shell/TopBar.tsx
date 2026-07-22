@@ -10,7 +10,7 @@
  *     authors can recover from a broken local state.
  */
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { loadFixtureProject } from '../fixtures';
 import {
@@ -21,8 +21,17 @@ import {
   importProjectFromFiles,
   importProjectZip,
 } from '../persistence/import';
-import { MASTER_VIEW_ID, selectActiveJourney, useBuilderStore, STORAGE_KEY } from '../store';
+import {
+  MASTER_VIEW_ID,
+  STORAGE_KEY,
+  redoProjectChange,
+  selectActiveJourney,
+  undoProjectChange,
+  useBuilderStore,
+  useTemporalStore,
+} from '../store';
 import { buildProjectTree, type JourneyTreeNode } from '../store/tree';
+import { MuralImportDialog } from './MuralImportDialog';
 
 export function TopBar() {
   const activeJourneyId = useBuilderStore((s) => s.activeJourneyId);
@@ -30,6 +39,10 @@ export function TopBar() {
   const journey = useBuilderStore(selectActiveJourney);
   const setActiveJourney = useBuilderStore((s) => s.setActiveJourney);
   const loadProject = useBuilderStore((s) => s.loadProject);
+
+  const canUndo = useTemporalStore((s) => s.pastStates.length > 0);
+  const canRedo = useTemporalStore((s) => s.futureStates.length > 0);
+  const [muralDialogOpen, setMuralDialogOpen] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
@@ -112,6 +125,47 @@ export function TopBar() {
         ) : null}
       </div>
       <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center rounded-md border border-slate-300 bg-white">
+          <button
+            type="button"
+            onClick={undoProjectChange}
+            disabled={!canUndo}
+            className="rounded-l-md px-2.5 py-1 text-slate-700 hover:bg-slate-50 disabled:cursor-default disabled:text-slate-300 disabled:hover:bg-white"
+            title="Undo (Ctrl+Z / ⌘Z)"
+            aria-label="Undo last change"
+          >
+            ↶
+          </button>
+          <span className="h-5 w-px bg-slate-200" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={redoProjectChange}
+            disabled={!canRedo}
+            className="rounded-r-md px-2.5 py-1 text-slate-700 hover:bg-slate-50 disabled:cursor-default disabled:text-slate-300 disabled:hover:bg-white"
+            title="Redo (Ctrl+Shift+Z / ⇧⌘Z)"
+            aria-label="Redo last undone change"
+          >
+            ↷
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            window.open(`${window.location.pathname}#/preview`, '_blank', 'noopener')
+          }
+          className="rounded-md bg-slate-900 px-3 py-1 font-medium text-white hover:bg-slate-700"
+          title="Walk through the whole application journey in a new tab"
+        >
+          Preview
+        </button>
+        <button
+          type="button"
+          onClick={() => setMuralDialogOpen(true)}
+          className="rounded-md border border-slate-300 bg-white px-3 py-1 text-slate-700 hover:bg-slate-50"
+          title="AI reads a Mural board and drafts the journey schemas for review"
+        >
+          Import from Mural
+        </button>
         <button
           type="button"
           onClick={() => folderRef.current?.click()}
@@ -144,6 +198,10 @@ export function TopBar() {
           Reset
         </button>
       </div>
+
+      {muralDialogOpen ? (
+        <MuralImportDialog onClose={() => setMuralDialogOpen(false)} />
+      ) : null}
 
       {/* Hidden file inputs for the picker buttons. */}
       <input

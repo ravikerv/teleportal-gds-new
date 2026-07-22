@@ -10,9 +10,8 @@
 
 import type { ReactElement } from 'react';
 
-import { BackLink } from '../components/BackLink';
-import { Button } from '../components/Button';
-import { SummaryList, type SummaryListRow } from '../components/SummaryList';
+import type { SummaryListRow } from '../components/SummaryList';
+import { getDesignSystem } from '../design-systems/registry';
 import { BLOB_PATHS } from '../shared/constants/index';
 import type { ParentState } from '../shared/types/journey.types';
 import type {
@@ -81,6 +80,7 @@ function renderEntryRows(
   applicationId: string,
   parent: ParentState,
 ): ReactElement[] {
+  const { components: c, tokens: t } = getDesignSystem();
   const target = parent.journeys[block.fromJourneyId];
   const entries = target?.entries ?? [];
   const showRemove = entries.length > 1 && block.removeLabel !== undefined;
@@ -117,11 +117,11 @@ function renderEntryRows(
 
     return (
       <div key={entry._id}>
-        <h2 className="govuk-heading-m" style={{ marginTop: '2rem' }}>
+        <h2 className={t.headingM} style={{ marginTop: '2rem' }}>
           {groupTitle}
           {showRemove ? (
             <a
-              className="govuk-link"
+              className={t.link}
               style={{ float: 'right', fontWeight: 400, fontSize: '1rem' }}
               href={resolveRemoveInstancePath(applicationId, block.fromJourneyId, entry._id)}
             >
@@ -129,7 +129,7 @@ function renderEntryRows(
             </a>
           ) : null}
         </h2>
-        <SummaryList rows={rows} />
+        <c.SummaryList rows={rows} />
       </div>
     );
   });
@@ -143,8 +143,9 @@ function FooterActions({
   actions: TaskListFooterAction[];
 }): ReactElement | null {
   if (actions.length === 0) return null;
+  const { components: c, tokens: t } = getDesignSystem();
   return (
-    <div className="govuk-button-group">
+    <div className={t.buttonGroup}>
       {actions.map((a) => {
         const action = taskListFooterAction.bind(
           null,
@@ -154,9 +155,9 @@ function FooterActions({
         );
         return (
           <form key={a.actionId} action={action}>
-            <Button type="submit" variant={a.variant ?? 'primary'}>
+            <c.Button type="submit" variant={a.variant ?? 'primary'}>
               {a.label}
-            </Button>
+            </c.Button>
           </form>
         );
       })}
@@ -166,6 +167,7 @@ function FooterActions({
 
 export function SummaryRenderer(props: SummaryRendererProps): ReactElement {
   const { applicationId, journeyId, schema, parent } = props;
+  const { components: c, tokens: t } = getDesignSystem();
   const backHref = schema.back
     ? resolveBackPath(applicationId, journeyId, schema.back)
     : null;
@@ -191,15 +193,15 @@ export function SummaryRenderer(props: SummaryRendererProps): ReactElement {
 
   return (
     <>
-      {backHref ? <BackLink href={backHref}>Back</BackLink> : null}
+      {backHref ? <c.BackLink href={backHref}>Back</c.BackLink> : null}
       {schema.caption ? (
-        <span className="govuk-caption-l">{schema.caption}</span>
+        <span className={t.captionL}>{schema.caption}</span>
       ) : null}
-      <h1 className="govuk-heading-l">{schema.title}</h1>
+      <h1 className={t.headingL}>{schema.title}</h1>
       {schema.description ? (
-        <p className="govuk-body">{schema.description}</p>
+        <p className={t.body}>{schema.description}</p>
       ) : null}
-      {headerRows.length > 0 ? <SummaryList rows={headerRows} /> : null}
+      {headerRows.length > 0 ? <c.SummaryList rows={headerRows} /> : null}
       {schema.entries && entriesVisible
         ? renderEntryRows(schema.entries, applicationId, parent)
         : null}
@@ -208,7 +210,7 @@ export function SummaryRenderer(props: SummaryRendererProps): ReactElement {
           <form action={addAnotherAction} style={{ display: 'inline' }}>
             <button
               type="submit"
-              className="govuk-link"
+              className={t.link}
               style={{
                 background: 'none',
                 border: 'none',
@@ -223,7 +225,7 @@ export function SummaryRenderer(props: SummaryRendererProps): ReactElement {
         </div>
       ) : null}
       <form action={continueAction} style={{ marginTop: '1.5rem' }}>
-        <Button type="submit">{schema.submitLabel ?? 'Continue'}</Button>
+        <c.Button type="submit">{schema.submitLabel ?? 'Continue'}</c.Button>
       </form>
       <FooterActions
         applicationId={applicationId}

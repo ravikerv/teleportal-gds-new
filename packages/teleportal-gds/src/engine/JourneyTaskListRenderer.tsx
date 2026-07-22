@@ -7,9 +7,8 @@
 
 import { Fragment, type ReactElement } from 'react';
 
-import { BackLink } from '../components/BackLink';
-import { Button } from '../components/Button';
-import { TaskList, type TaskListEntry } from '../components/TaskList';
+import type { TaskListEntry } from '../components/TaskList';
+import { getDesignSystem } from '../design-systems/registry';
 import type { ParentState } from '../shared/types/journey.types';
 import type {
   TaskListFooterAction,
@@ -66,8 +65,9 @@ function FooterActions({
   actions: TaskListFooterAction[];
 }): ReactElement | null {
   if (actions.length === 0) return null;
+  const { components: c, tokens: t } = getDesignSystem();
   return (
-    <div className="govuk-button-group">
+    <div className={t.buttonGroup}>
       {actions.map((a) => {
         const action = taskListFooterAction.bind(
           null,
@@ -77,9 +77,9 @@ function FooterActions({
         );
         return (
           <form key={a.actionId} action={action}>
-            <Button type="submit" variant={a.variant ?? 'primary'}>
+            <c.Button type="submit" variant={a.variant ?? 'primary'}>
               {a.label}
-            </Button>
+            </c.Button>
           </form>
         );
       })}
@@ -91,6 +91,7 @@ export function JourneyTaskListRenderer(
   props: JourneyTaskListRendererProps,
 ): ReactElement {
   const { applicationId, journeyId, schema, parent } = props;
+  const { components: c, tokens: t } = getDesignSystem();
   const backHref = schema.back
     ? resolveBackPath(applicationId, journeyId, schema.back)
     : null;
@@ -104,18 +105,18 @@ export function JourneyTaskListRenderer(
   if (schema.sections && schema.sections.length > 0) {
     return (
       <>
-        {backHref ? <BackLink href={backHref}>Back</BackLink> : null}
+        {backHref ? <c.BackLink href={backHref}>Back</c.BackLink> : null}
         {schema.caption ? (
-          <span className="govuk-caption-l">{schema.caption}</span>
+          <span className={t.captionL}>{schema.caption}</span>
         ) : null}
-        <h1 className="govuk-heading-l">{schema.title}</h1>
+        <h1 className={t.headingL}>{schema.title}</h1>
         {schema.description ? (
-          <p className="govuk-body">{schema.description}</p>
+          <p className={t.body}>{schema.description}</p>
         ) : null}
         {schema.sections.map((section) => (
           <Fragment key={section.id}>
-            <h2 className="govuk-heading-m">{section.title}</h2>
-            <TaskList tasks={toEntries(section.tasks, applicationId, parent, schema)} />
+            <h2 className={t.headingM}>{section.title}</h2>
+            <c.TaskList tasks={toEntries(section.tasks, applicationId, parent, schema)} />
           </Fragment>
         ))}
         {footer}
@@ -126,15 +127,15 @@ export function JourneyTaskListRenderer(
   const entries = toEntries(schema.tasks ?? [], applicationId, parent, schema);
   return (
     <>
-      {backHref ? <BackLink href={backHref}>Back</BackLink> : null}
+      {backHref ? <c.BackLink href={backHref}>Back</c.BackLink> : null}
       {schema.caption ? (
-        <span className="govuk-caption-l">{schema.caption}</span>
+        <span className={t.captionL}>{schema.caption}</span>
       ) : null}
-      <h1 className="govuk-heading-l">{schema.title}</h1>
+      <h1 className={t.headingL}>{schema.title}</h1>
       {schema.description ? (
-        <p className="govuk-body">{schema.description}</p>
+        <p className={t.body}>{schema.description}</p>
       ) : null}
-      <TaskList tasks={entries} />
+      <c.TaskList tasks={entries} />
       {footer}
     </>
   );

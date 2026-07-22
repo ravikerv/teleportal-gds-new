@@ -9,15 +9,21 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "scope-nhsuk": "node scripts/scope-nhsuk-css.mjs",
+    "predev": "npm run scope-nhsuk",
+    "prebuild": "npm run scope-nhsuk"
   },
   "dependencies": {
-    "@xyflow/react": "^12.4.4",
+    "@dagrejs/dagre": "^3.0.0",
+    "@xyflow/react": "^12.11.2",
     "govuk-frontend": "^6.1.0",
     "jszip": "^3.10.1",
+    "nhsuk-frontend": "^10.5.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "teleportal-gds": "*",
+    "zundo": "^2.3.0",
     "zustand": "^5.0.2"
   },
   "devDependencies": {

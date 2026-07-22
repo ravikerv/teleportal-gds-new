@@ -60,7 +60,7 @@ The four schema types per journey:
 - **`task-list-schema.json`** — application-level list of journeys and their statuses.
 - **`confirmation-schema.json`** — the post-submit panel with a reference id pulled from `parent.system.referenceId`.
 
-See the [Schema Reference](./schema-reference.md) for the exact shapes.
+See the [JSON Schema Reference](./nextjs/schemas/overview.md) for the exact shapes.
 
 ## When to use it
 
@@ -71,4 +71,6 @@ See the [Schema Reference](./schema-reference.md) for the exact shapes.
 ## Where to next
 
 - **[Usage](./usage.md)** — install the library, wire it into Next.js pages, configure storage.
-- **[Schema Reference](./schema-reference.md)** — the full shape of every schema type, with examples.
+- **[Next.js Project](./nextjs/project-structure.md)** — the consuming app's code structure and its JSON schemas.
+- **[JSON Schema Reference](./nextjs/schemas/overview.md)** — the full shape of every schema type, with examples.
+- **[Monorepo](./monorepo/overview.md)** — the Framework, the React components library, and the Journey Builder.

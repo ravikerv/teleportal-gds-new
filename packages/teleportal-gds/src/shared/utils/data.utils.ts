@@ -22,6 +22,10 @@ import type {
   ParentState,
 } from '../types/journey.types';
 import type {
+  FormPage,
+  FormSchema,
+  JourneyPage,
+  NextWhenRule,
   TaskListItem,
   TaskListSchema,
   TaskStatus,
@@ -104,12 +108,118 @@ export function resolveDependencies(parent: ParentState): ParentState {
   return { ...parent, journeys: updatedJourneys };
 }
 
+// ---------------------------------------------------------------------------
+// Abandoned-branch clearing.
+//
+// When a branching question (`nextWhen`) is re-answered so its navigation
+// target changes, the data collected down the previously-taken branch must
+// not survive: stale answers would resurface on summaries and could make a
+// journey look complete via a route that no longer applies.
+// ---------------------------------------------------------------------------
+
+export type AbandonedBranchDiff = {
+  /** Same-journey forms whose answers should be dropped. */
+  clearFormIds: string[];
+  /** Looping/linked child journeys whose data (answers + entries) resets. */
+  clearChildJourneyIds: string[];
+};
+
+function isFormPageType(page: JourneyPage): page is FormPage {
+  return page.type === undefined || page.type === 'form';
+}
+
+/** Mirror of the engine's `resolveNextToken` matching semantics. */
+function matchNextWhenRule(
+  formPage: FormPage,
+  answers: FormAnswers,
+): NextWhenRule | undefined {
+  return (formPage.nextWhen ?? []).find((rule) => {
+    const submitted = answers[rule.fieldId];
+    return typeof submitted === 'string' && submitted === rule.value;
+  });
+}
+
+/** The child journey a branch token leads into, if any. */
+function branchChildJourneyId(token: string): string | null {
+  if (token.startsWith('add-instance:')) return token.slice('add-instance:'.length);
+  if (token.startsWith('journey:')) return token.slice('journey:'.length);
+  return null;
+}
+
+/**
+ * Walk a same-journey default `next` chain from `startToken`, collecting
+ * formIds until a token / unknown id / already-seen form / `stop` member.
+ */
+function chainFormIds(
+  startToken: string,
+  forms: JourneyPage[],
+  stop: ReadonlySet<string>,
+): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  let cur: string | undefined = startToken;
+  while (cur && !seen.has(cur)) {
+    seen.add(cur);
+    const form = forms.find((p) => isFormPageType(p) && p.formId === cur) as
+      | FormPage
+      | undefined;
+    if (!form || stop.has(form.formId)) break;
+    ids.push(form.formId);
+    cur = form.next;
+  }
+  return ids;
+}
+
+/**
+ * Pure diff: given a form's previous and new answers, decide what the
+ * newly-abandoned branch (if any) leaves behind to clear. Forms that the
+ * NEW branch's chain also passes through (reconvergence) are protected.
+ * Returns null when nothing needs clearing.
+ */
+export function diffAbandonedBranch(
+  formPage: FormPage,
+  prevAnswers: FormAnswers | undefined,
+  newAnswers: FormAnswers,
+  allForms: JourneyPage[],
+): AbandonedBranchDiff | null {
+  if (!prevAnswers || !formPage.nextWhen || formPage.nextWhen.length === 0) {
+    return null;
+  }
+  const prevTarget =
+    matchNextWhenRule(formPage, prevAnswers)?.then ?? formPage.next;
+  const nowTarget = matchNextWhenRule(formPage, newAnswers)?.then ?? formPage.next;
+  if (prevTarget === nowTarget) return null;
+
+  const childId = branchChildJourneyId(prevTarget);
+  if (childId) {
+    return { clearFormIds: [], clearChildJourneyIds: [childId] };
+  }
+
+  const keep = new Set<string>([
+    formPage.formId,
+    ...chainFormIds(nowTarget, allForms, new Set([formPage.formId])),
+  ]);
+  const clearFormIds = chainFormIds(prevTarget, allForms, keep);
+  if (clearFormIds.length === 0) return null;
+  return { clearFormIds, clearChildJourneyIds: [] };
+}
+
+export type SaveAnswersOptions = {
+  /**
+   * The journey's form schema. When provided, saves detect a re-answered
+   * branching question and clear the abandoned branch's data (same-journey
+   * downstream forms, or a linked child journey's answers + entries).
+   */
+  formSchema?: FormSchema;
+};
+
 /**
  * Persist a form's answers and keep parent + per-journey JSON in sync.
  *
  * Order:
  *   1. Read both blobs (with etags).
- *   2. Merge new answers into journey state.
+ *   2. Merge new answers into journey state (clearing any branch the new
+ *      answers abandoned, when `options.formSchema` is provided).
  *   3. Recompute derived parent fields.
  *   4. Write parent first under If-Match (canonical source).
  *   5. Write per-journey blob under If-Match (denormalised view).
@@ -123,6 +233,7 @@ export async function saveAnswers(
   journeyId: string,
   formId: string,
   answers: FormAnswers,
+  options?: SaveAnswersOptions,
 ): Promise<void> {
   const { state: parentState, etag: parentEtag } = await loadOrInitParent(applicationId);
   const { state: journeyState, etag: journeyEtag } = await loadOrInitJourney(
@@ -132,24 +243,52 @@ export async function saveAnswers(
 
   const ts = nowIso();
 
+  const formPage = options?.formSchema
+    ? (options.formSchema.forms.find(
+        (p) => isFormPageType(p) && p.formId === formId,
+      ) as FormPage | undefined)
+    : undefined;
+  const diff = formPage
+    ? diffAbandonedBranch(
+        formPage,
+        journeyState.answers[formId],
+        answers,
+        options!.formSchema!.forms,
+      )
+    : null;
+
+  const mergedAnswers: Record<string, FormAnswers> = {
+    ...journeyState.answers,
+    [formId]: {
+      ...(journeyState.answers[formId] ?? {}),
+      ...answers,
+    },
+  };
+  for (const clearId of diff?.clearFormIds ?? []) {
+    delete mergedAnswers[clearId];
+  }
+
   const updatedJourney: JourneyState = {
     ...journeyState,
-    answers: {
-      ...journeyState.answers,
-      [formId]: {
-        ...(journeyState.answers[formId] ?? {}),
-        ...answers,
-      },
-    },
+    answers: mergedAnswers,
     updatedAt: ts,
   };
 
+  const journeys: Record<string, JourneyState> = {
+    ...parentState.journeys,
+    [journeyId]: updatedJourney,
+  };
+  // Reset any child journey the abandoned branch fed (answers + entries).
+  const clearedChildIds = (diff?.clearChildJourneyIds ?? []).filter(
+    (id) => id !== journeyId && journeys[id] !== undefined,
+  );
+  for (const childId of clearedChildIds) {
+    journeys[childId] = createInitialJourney(applicationId, childId);
+  }
+
   const mergedParent: ParentState = {
     ...parentState,
-    journeys: {
-      ...parentState.journeys,
-      [journeyId]: updatedJourney,
-    },
+    journeys,
     updatedAt: ts,
   };
 
@@ -162,6 +301,15 @@ export async function saveAnswers(
     resolvedJourney,
     journeyEtag,
   );
+  // Keep the cleared children's denormalised per-journey blobs in sync too.
+  for (const childId of clearedChildIds) {
+    const childBlob = await loadJourney(applicationId, childId);
+    await writeBlob(
+      BLOB_PATHS.journeyData(applicationId, childId),
+      resolvedParent.journeys[childId]!,
+      childBlob?.etag,
+    );
+  }
 }
 
 /**
@@ -372,6 +520,7 @@ export async function saveEntryAnswers(
   instanceId: string,
   formId: string,
   answers: FormAnswers,
+  options?: SaveAnswersOptions,
 ): Promise<void> {
   const { state: parentState, etag: parentEtag } = await loadOrInitParent(applicationId);
   const { state: journeyState, etag: journeyEtag } = await loadOrInitJourney(
@@ -387,12 +536,32 @@ export async function saveEntryAnswers(
     );
   }
   const existing = entries[idx]!;
+
+  const formPage = options?.formSchema
+    ? (options.formSchema.forms.find(
+        (p) => isFormPageType(p) && p.formId === formId,
+      ) as FormPage | undefined)
+    : undefined;
+  const diff = formPage
+    ? diffAbandonedBranch(
+        formPage,
+        existing.answers[formId],
+        answers,
+        options!.formSchema!.forms,
+      )
+    : null;
+
+  const mergedEntryAnswers: Record<string, FormAnswers> = {
+    ...existing.answers,
+    [formId]: { ...(existing.answers[formId] ?? {}), ...answers },
+  };
+  for (const clearId of diff?.clearFormIds ?? []) {
+    delete mergedEntryAnswers[clearId];
+  }
+
   const updatedEntry: JourneyEntry = {
     ...existing,
-    answers: {
-      ...existing.answers,
-      [formId]: { ...(existing.answers[formId] ?? {}), ...answers },
-    },
+    answers: mergedEntryAnswers,
     updatedAt: ts,
   };
   const updatedEntries = [...entries];

@@ -8,6 +8,7 @@ export * from './Button';
 export * from './ErrorSummary';
 export * from './SummaryList';
 export * from './TaskList';
+export * from './Panel';
 export * from './Header';
 export * from './Footer';
 export * from './BackLink';

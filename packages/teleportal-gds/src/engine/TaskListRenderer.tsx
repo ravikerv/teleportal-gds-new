@@ -13,8 +13,8 @@
 
 import { Fragment, type ReactElement } from 'react';
 
-import { Button } from '../components/Button';
-import { TaskList, type TaskListEntry } from '../components/TaskList';
+import type { TaskListEntry } from '../components/TaskList';
+import { getDesignSystem } from '../design-systems/registry';
 import { BLOB_PATHS } from '../shared/constants/index';
 import type { ParentState } from '../shared/types/journey.types';
 import type {
@@ -65,8 +65,9 @@ function FooterActions({
   actions: TaskListFooterAction[];
 }): ReactElement | null {
   if (actions.length === 0) return null;
+  const { components: c, tokens: t } = getDesignSystem();
   return (
-    <div className="govuk-button-group">
+    <div className={t.buttonGroup}>
       {actions.map((a) => {
         const action = taskListFooterAction.bind(
           null,
@@ -76,9 +77,9 @@ function FooterActions({
         );
         return (
           <form key={a.actionId} action={action}>
-            <Button type="submit" variant={a.variant ?? 'primary'}>
+            <c.Button type="submit" variant={a.variant ?? 'primary'}>
               {a.label}
-            </Button>
+            </c.Button>
           </form>
         );
       })}
@@ -88,6 +89,7 @@ function FooterActions({
 
 export function TaskListRenderer(props: TaskListRendererProps): ReactElement {
   const { applicationId, schema, parent } = props;
+  const { components: c, tokens: t } = getDesignSystem();
   const footer = (
     <FooterActions
       applicationId={applicationId}
@@ -98,11 +100,11 @@ export function TaskListRenderer(props: TaskListRendererProps): ReactElement {
   if (schema.sections && schema.sections.length > 0) {
     return (
       <>
-        <h1 className="govuk-heading-xl">{schema.title}</h1>
+        <h1 className={t.headingXl}>{schema.title}</h1>
         {schema.sections.map((section) => (
           <Fragment key={section.id}>
-            <h2 className="govuk-heading-m">{section.title}</h2>
-            <TaskList tasks={toEntries(section.tasks, applicationId, parent, schema)} />
+            <h2 className={t.headingM}>{section.title}</h2>
+            <c.TaskList tasks={toEntries(section.tasks, applicationId, parent, schema)} />
           </Fragment>
         ))}
         {footer}
@@ -113,8 +115,8 @@ export function TaskListRenderer(props: TaskListRendererProps): ReactElement {
   const entries = toEntries(schema.tasks ?? [], applicationId, parent, schema);
   return (
     <>
-      <h1 className="govuk-heading-l">{schema.title}</h1>
-      <TaskList tasks={entries} />
+      <h1 className={t.headingL}>{schema.title}</h1>
+      <c.TaskList tasks={entries} />
       {footer}
     </>
   );

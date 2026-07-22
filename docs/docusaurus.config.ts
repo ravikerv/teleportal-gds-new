@@ -43,10 +43,11 @@ const config: Config = {
         { to: '/', label: 'Introduction', position: 'left', activeBaseRegex: '^/$' },
         { to: '/usage', label: 'Usage', position: 'left' },
         {
-          to: '/schema-reference',
+          to: '/nextjs/schemas/overview',
           label: 'Schema Reference',
           position: 'left',
         },
+        { to: '/monorepo/overview', label: 'Monorepo', position: 'left' },
       ],
     },
     footer: {

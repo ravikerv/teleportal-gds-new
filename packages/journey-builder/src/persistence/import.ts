@@ -21,12 +21,27 @@ export async function importProjectZip(file: Blob): Promise<Project> {
   // Node-based test runners.
   const buffer = await file.arrayBuffer();
   const zip = await JSZip.loadAsync(buffer);
-  const loaded = emptyLoaded();
+  const entries: { path: string; text: string }[] = [];
   for (const [path, entry] of Object.entries(zip.files)) {
     if (entry.dir) continue;
     if (!path.endsWith('.json')) continue;
-    const text = await entry.async('string');
-    handleFile(path, text, loaded);
+    entries.push({ path, text: await entry.async('string') });
+  }
+  return importProjectFromEntries(entries);
+}
+
+/**
+ * Import from already-loaded path/text pairs — the shared core of the zip
+ * and folder importers, and the entry point for programmatic sources like
+ * the AI Mural import (which receives a files map over HTTP).
+ */
+export function importProjectFromEntries(
+  entries: { path: string; text: string }[],
+): Project {
+  const loaded = emptyLoaded();
+  for (const entry of entries) {
+    if (!entry.path.endsWith('.json')) continue;
+    handleFile(entry.path, entry.text, loaded);
   }
   return finalise(loaded);
 }
@@ -69,9 +84,14 @@ function handleFile(path: string, text: string, loaded: Loaded): void {
   if (filename === 'form-schemas.json') {
     const formSchema = data as FormSchema;
     const existing = loaded.journeys[jid];
-    loaded.journeys[jid] = existing
-      ? { ...existing, formSchema }
-      : buildProjectJourney(formSchema);
+    // Rebuild (not spread) so formOrder is derived from THIS formSchema —
+    // a summary-first file ordering would otherwise leave the placeholder's
+    // empty formOrder in place and silently drop every form on export.
+    loaded.journeys[jid] = buildProjectJourney(
+      formSchema,
+      existing?.summarySchema,
+      existing?.layout ?? {},
+    );
   } else if (filename === 'summary-schema.json') {
     const summarySchema = data as SummarySchema;
     const existing = loaded.journeys[jid];

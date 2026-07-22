@@ -26,6 +26,14 @@ import { PreviewForm } from './PreviewForm';
 import { PreviewHub } from './PreviewHub';
 import { PreviewSummary, type MockEntries } from './PreviewSummary';
 import { PreviewTaskList } from './PreviewTaskList';
+import {
+  SKIN_OPTIONS,
+  SkinContext,
+  loadSkin,
+  saveSkin,
+  skinClass,
+  type PreviewSkinId,
+} from './skin';
 import './preview.css';
 
 type MockState = {
@@ -47,6 +55,7 @@ export function PreviewPane() {
   const selectedNodeId = useBuilderStore((s) => s.selectedNodeId);
 
   const [mockText, setMockText] = useState(DEFAULT_MOCK);
+  const [skin, setSkin] = useState<PreviewSkinId>(loadSkin);
   const mock = useMemo<MockState>(() => safeParse(mockText), [mockText]);
 
   const target = useMemo(() => {
@@ -106,11 +115,40 @@ export function PreviewPane() {
   }, [activeJourneyId, journey, selectedNodeId]);
 
   return (
-    <div className="grid h-full grid-cols-[2fr_1fr] gap-3 overflow-hidden">
+    <SkinContext.Provider value={skin}>
+    <div className="flex h-full flex-col gap-2 overflow-hidden">
+      <div className="flex items-center gap-2">
+        <label
+          htmlFor="preview-design-system"
+          className="text-[10px] font-semibold uppercase tracking-wide text-slate-500"
+        >
+          Design system
+        </label>
+        <select
+          id="preview-design-system"
+          value={skin}
+          onChange={(e) => {
+            const id = e.target.value as PreviewSkinId;
+            setSkin(id);
+            saveSkin(id);
+          }}
+          className="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs text-slate-700"
+        >
+          {SKIN_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-[2fr_1fr] gap-3 overflow-hidden">
       <div className="overflow-y-auto rounded border border-slate-200 bg-white p-4">
-        <div className="govuk-template__body" style={{ background: 'transparent' }}>
-          <div className="govuk-width-container">
-            <main className="govuk-main-wrapper">
+        <div
+          className={`${skin === 'nhsuk' ? 'nhsuk-scope ' : ''}${skinClass(skin, 'govuk-template__body')}`}
+          style={{ background: 'transparent' }}
+        >
+          <div className={skinClass(skin, 'govuk-width-container')}>
+            <main className={skinClass(skin, 'govuk-main-wrapper')}>
               {target?.kind === 'master' ? (
                 <PreviewTaskList source={project.taskList} isMaster />
               ) : target?.kind === 'form' ? (
@@ -129,7 +167,9 @@ export function PreviewPane() {
                   mockEntries={mock.entries ?? []}
                 />
               ) : (
-                <p className="govuk-body">Nothing to preview. Select a node on the canvas.</p>
+                <p className={skinClass(skin, 'govuk-body')}>
+                  Nothing to preview. Select a node on the canvas.
+                </p>
               )}
             </main>
           </div>
@@ -160,7 +200,9 @@ export function PreviewPane() {
           spellCheck={false}
         />
       </div>
+      </div>
     </div>
+    </SkinContext.Provider>
   );
 }
 
